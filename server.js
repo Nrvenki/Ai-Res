@@ -4,90 +4,106 @@ require('dotenv').config();
 
 const app = express();
 
-// ✅ CORS - Super simple
+// ✅ CORS Fix - credentials இருக்கும்போது specific origin வேணும்
+const allowedOrigins = [
+  'https://sivaatschecker.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: 'https://sivaatschecker.netlify.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Still allow, but log it
+      console.log('⚠️ Origin not in whitelist:', origin);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 hours
 }));
+
+// Manual CORS headers
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ✅ Test routes
+// Routes
 app.get('/', (req, res) => {
-  res.json({ message: 'API Running', timestamp: new Date().toISOString() });
+  res.json({ 
+    message: '✅ Server is running!',
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', uptime: process.uptime() });
 });
 
-// ✅ Resume routes - PROTECTED with try-catch
-let resumeRoutesLoaded = false;
+app.get('/test-cors', (req, res) => {
+  res.json({ 
+    message: 'CORS working!', 
+    origin: req.headers.origin,
+    allowedOrigins: allowedOrigins
+  });
+});
+
+// Resume routes
 try {
   const resumeRoutes = require('./routes/resume');
   app.use('/api/resume', resumeRoutes);
-  resumeRoutesLoaded = true;
-  console.log('✅ Resume routes loaded');
+  console.log('✅ Routes loaded');
 } catch (error) {
-  console.error('❌ Resume routes failed:', error.message);
-  console.error(error.stack);
-  
-  // Fallback route
-  app.post('/api/resume/analyze', (req, res) => {
-    res.status(503).json({
-      success: false,
-      message: 'Service temporarily unavailable',
-      error: 'Routes not loaded'
-    });
-  });
+  console.error('❌ Routes error:', error.message);
 }
 
-// MongoDB - completely optional
-if (process.env.MONGODB_URI) {
-  try {
+// MongoDB
+try {
+  if (process.env.MONGODB_URI) {
     const mongoose = require('mongoose');
-    mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000
-    })
-      .then(() => console.log('✅ MongoDB connected'))
-      .catch(err => console.log('⚠️ MongoDB skip:', err.message));
-  } catch (err) {
-    console.log('⚠️ MongoDB module not available');
+    mongoose.connect(process.env.MONGODB_URI)
+      .then(() => console.log('✅ MongoDB OK'))
+      .catch(err => console.log('⚠️ MongoDB failed:', err.message));
   }
+} catch (error) {
+  console.log('⚠️ MongoDB skip');
 }
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('❌ Error:', err);
-  res.status(500).json({ error: 'Server error' });
+  console.error('Error:', err.message);
+  res.status(500).json({ error: err.message });
 });
 
-// ✅ Start server
+// Start server
 const PORT = process.env.PORT || 10000;
 
-const server = app.listen(PORT, '0.0.0.0', (err) => {
-  if (err) {
-    console.error('❌ Server failed to start:', err);
-    process.exit(1);
-  }
-  console.log('\n' + '='.repeat(50));
-  console.log(`✅ SERVER STARTED SUCCESSFULLY`);
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`🌐 Env: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📦 Routes: ${resumeRoutesLoaded ? 'Loaded' : 'Failed'}`);
-  console.log('='.repeat(50) + '\n');
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Allowed origins:`, allowedOrigins);
 });
-
-// Handle server errors
-server.on('error', (err) => {
-  console.error('❌ Server error:', err);
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use`);
-    process.exit(1);
-  }
-});
-
-module.exports = app;
