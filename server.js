@@ -1,141 +1,72 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-
-// Load environment variables FIRST
-dotenv.config();
+require('dotenv').config();
 
 const app = express();
 
-// ✅ CORS - Must be FIRST middleware
-const allowedOrigins = [
-  'https://sivaatschecker.netlify.app',
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://localhost:5174'
-];
+// ✅ Step 1: Enable CORS for EVERYTHING
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', '*');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('❌ Blocked origin:', origin);
-      callback(null, true); // Allow anyway during debugging
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
-}));
-
-// Body parsers
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ✅ CRITICAL: Health check - MUST respond IMMEDIATELY
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    success: true,
-    status: 'healthy',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
-
+// ✅ Step 2: Basic routes FIRST
 app.get('/', (req, res) => {
-  res.status(200).json({ 
-    success: true,
-    message: '🚀 AI ATS Resume Checker API',
-    status: 'running',
+  res.json({ 
+    message: '✅ Server is running!',
     timestamp: new Date().toISOString()
   });
 });
 
-// Test CORS
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
+
 app.get('/test-cors', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'CORS working!',
-    origin: req.headers.origin || 'No origin'
-  });
+  res.json({ message: 'CORS working!', origin: req.headers.origin });
 });
 
-// ✅ Load resume routes ONLY after basic routes work
-let resumeRoutes;
+// ✅ Step 3: Resume routes - with TRY-CATCH
 try {
-  resumeRoutes = require('./routes/resume');
+  const resumeRoutes = require('./routes/resume');
   app.use('/api/resume', resumeRoutes);
-  console.log('✅ Resume routes loaded');
-} catch (err) {
-  console.error('⚠️ Resume routes error:', err.message);
-  console.error('Server will start without resume routes');
+  console.log('✅ Routes loaded');
+} catch (error) {
+  console.error('❌ Routes error:', error.message);
 }
 
-// MongoDB connection - OPTIONAL, non-blocking
-if (process.env.MONGODB_URI) {
-  const mongoose = require('mongoose');
-  mongoose
-    .connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    })
-    .then(() => console.log('✅ MongoDB Connected'))
-    .catch(err => console.log('⚠️ MongoDB not connected:', err.message));
+// ✅ Step 4: MongoDB - OPTIONAL
+try {
+  if (process.env.MONGODB_URI) {
+    const mongoose = require('mongoose');
+    mongoose.connect(process.env.MONGODB_URI)
+      .then(() => console.log('✅ MongoDB OK'))
+      .catch(err => console.log('⚠️ MongoDB failed:', err.message));
+  }
+} catch (error) {
+  console.log('⚠️ MongoDB skip');
 }
 
-// 404 Handler
-app.use((req, res) => {
-  res.status(404).json({ 
-    success: false,
-    message: 'Route not found',
-    path: req.path
-  });
-});
-
-// Error Handler
+// Error handler
 app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.message);
-  res.status(500).json({ 
-    success: false, 
-    message: err.message || 'Server error'
-  });
+  console.error('Error:', err.message);
+  res.status(500).json({ error: err.message });
 });
 
-// ✅ CRITICAL: Use Render's PORT (default 10000)
+// ✅ Start server
 const PORT = process.env.PORT || 10000;
-const HOST = '0.0.0.0';
 
-// Start server
-const server = app.listen(PORT, HOST, () => {
-  console.log('='.repeat(50));
-  console.log(`🚀 Server running on ${HOST}:${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ Time: ${new Date().toLocaleString()}`);
-  console.log('='.repeat(50));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
-
-// Timeout settings for Render
-server.keepAliveTimeout = 65000;
-server.headersTimeout = 66000;
-
-// Error handlers
-process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Rejection:', err);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
-  setTimeout(() => process.exit(1), 1000);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down...');
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
-});
-
-module.exports = app;
