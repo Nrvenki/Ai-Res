@@ -9,27 +9,18 @@ dotenv.config();
 
 const app = express();
 
-// CORS Configuration
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://sivaatschecker.netlify.app',
-    'https://*.netlify.app'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
-}));
+// ✅ CORS - எல்லாரையும் allow (simplest & works)
+app.use(cors());
+app.options('*', cors());
 
-// Additional CORS headers
+// Additional headers for safety
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
   next();
 });
@@ -54,7 +45,8 @@ app.get('/', (req, res) => {
     message: '🚀 AI ATS Resume Checker API is running!',
     version: '1.0.0',
     status: 'active',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    cors: 'enabled for all origins'
   });
 });
 
@@ -62,6 +54,16 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok',
     uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test CORS endpoint
+app.get('/test-cors', (req, res) => {
+  res.json({
+    success: true,
+    message: 'CORS is working!',
+    origin: req.headers.origin,
     timestamp: new Date().toISOString()
   });
 });
@@ -85,51 +87,61 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
   
-  // Keep-alive function (inline) - Render free tier sleep-ஐ prevent பண்ண
+  // Keep-alive - Backend-ஐ awake-ஆ வைக்க
   if (process.env.NODE_ENV === 'production') {
-    const keepAlive = () => {
-      const url = process.env.RENDER_EXTERNAL_URL || 'https://ai-res.onrender.com';
-      
-      setInterval(() => {
-        https.get(url, (res) => {
-          if (res.statusCode === 200) {
-            console.log('✅ Keep-alive ping successful');
-          }
-        }).on('error', (err) => {
-          console.log('⚠️ Keep-alive ping failed:', err.message);
-        });
-      }, 14 * 60 * 1000); // Every 14 minutes
-    };
+    const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://ai-res.onrender.com';
     
-    keepAlive();
-    console.log('✅ Keep-alive started (pings every 14 minutes)');
+    console.log('✅ Keep-alive starting...');
+    
+    // Initial ping after 1 minute
+    setTimeout(() => {
+      https.get(RENDER_URL, (res) => {
+        console.log(`✅ Initial keep-alive ping: ${res.statusCode}`);
+      }).on('error', (err) => {
+        console.log('⚠️ Initial ping failed:', err.message);
+      });
+    }, 60000);
+    
+    // Regular pings every 14 minutes
+    setInterval(() => {
+      https.get(RENDER_URL, (res) => {
+        console.log(`✅ Keep-alive ping: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
+      }).on('error', (err) => {
+        console.log('⚠️ Keep-alive failed:', err.message);
+      });
+    }, 14 * 60 * 1000);
+    
+    console.log('✅ Keep-alive enabled (pings every 14 minutes)');
   }
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Closing server gracefully...');
+  console.log('SIGTERM received. Closing server...');
   server.close(() => {
     console.log('✅ Server closed');
-    mongoose.connection.close(false, () => {
-      console.log('✅ MongoDB connection closed');
+    if (mongoose.connection.readyState === 1) {
+      mongoose.connection.close(false, () => {
+        console.log('✅ MongoDB closed');
+        process.exit(0);
+      });
+    } else {
       process.exit(0);
-    });
+    }
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('\nSIGINT received. Closing server gracefully...');
+  console.log('\nSIGINT received. Closing server...');
   server.close(() => {
     console.log('✅ Server closed');
-    mongoose.connection.close(false, () => {
-      console.log('✅ MongoDB connection closed');
+    if (mongoose.connection.readyState === 1) {
+      mongoose.connection.close(false, () => {
+        console.log('✅ MongoDB closed');
+        process.exit(0);
+      });
+    } else {
       process.exit(0);
-    });
+    }
   });
-});
-
-// Unhandled promise rejection
-process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Promise Rejection:', err);
 });
