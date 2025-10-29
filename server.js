@@ -9,15 +9,25 @@ dotenv.config();
 
 const app = express();
 
-// ✅ CORS - Simple and works
-app.use(cors());
+// ✅ CORS Configuration - Allow all origins
+const corsOptions = {
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // 24 hours
+};
 
-// Additional CORS headers
+app.use(cors(corsOptions));
+
+// Additional CORS headers for extra compatibility
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -26,36 +36,53 @@ app.use((req, res, next) => {
   next();
 });
 
+// Body parsers with increased limits
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// MongoDB Connection
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// MongoDB Connection with better error handling
 if (process.env.MONGODB_URI) {
   mongoose
-    .connect(process.env.MONGODB_URI)
+    .connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    })
     .then(() => console.log('✅ MongoDB Connected'))
-    .catch((err) => console.log('❌ MongoDB Connection Error:', err));
+    .catch((err) => {
+      console.log('❌ MongoDB Connection Error:', err.message);
+      // Continue without MongoDB for health checks
+    });
+} else {
+  console.log('⚠️ No MONGODB_URI found in environment variables');
 }
 
-// Routes
-app.use('/api/resume', resumeRoutes);
-
-// Health Check
+// Health Check - Must work even if MongoDB is down
 app.get('/', (req, res) => {
   res.json({ 
+    success: true,
     message: '🚀 AI ATS Resume Checker API is running!',
     version: '1.0.0',
     status: 'active',
     timestamp: new Date().toISOString(),
-    cors: 'enabled for all origins'
+    cors: 'enabled for all origins',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
 app.get('/health', (req, res) => {
   res.json({ 
+    success: true,
     status: 'ok',
     uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    memory: process.memoryUsage()
   });
 });
 
@@ -65,17 +92,38 @@ app.get('/test-cors', (req, res) => {
     success: true,
     message: 'CORS is working!',
     origin: req.headers.origin || 'No origin header',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    headers: req.headers
   });
 });
 
-// Error Handling
+// Routes - Make sure these are defined
+app.use('/api/resume', resumeRoutes);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false,
+    message: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
+});
+
+// Global Error Handling
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ 
+  console.error('❌ Error:', err.stack);
+  
+  // Don't expose internal error details in production
+  const errorMessage = process.env.NODE_ENV === 'production' 
+    ? 'Something went wrong on the server' 
+    : err.message;
+  
+  res.status(err.status || 500).json({ 
     success: false, 
-    message: 'Something went wrong!', 
-    error: err.message 
+    message: errorMessage,
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -84,65 +132,95 @@ const HOST = '0.0.0.0';
 
 // Start server
 const server = app.listen(PORT, HOST, () => {
+  console.log('='.repeat(50));
   console.log(`🚀 Server running on ${HOST}:${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+  console.log(`🌐 CORS: Enabled for all origins`);
+  console.log('='.repeat(50));
   
-  // Keep-alive for production
+  // Keep-alive for production (Render free tier)
   if (process.env.NODE_ENV === 'production') {
     const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://ai-res.onrender.com';
     
-    console.log('✅ Keep-alive starting...');
+    console.log('✅ Keep-alive starting for Render free tier...');
     
     // Initial ping after 1 minute
     setTimeout(() => {
-      https.get(RENDER_URL, (res) => {
-        console.log(`✅ Initial keep-alive ping: ${res.statusCode}`);
-      }).on('error', (err) => {
-        console.log('⚠️ Initial ping failed:', err.message);
-      });
+      pingServer(RENDER_URL, 'Initial');
     }, 60000);
     
     // Regular pings every 14 minutes
     setInterval(() => {
-      https.get(RENDER_URL, (res) => {
-        console.log(`✅ Keep-alive ping: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
-      }).on('error', (err) => {
-        console.log('⚠️ Keep-alive failed:', err.message);
-      });
+      pingServer(RENDER_URL, 'Scheduled');
     }, 14 * 60 * 1000);
     
     console.log('✅ Keep-alive enabled (pings every 14 minutes)');
   }
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Closing server...');
-  server.close(() => {
-    console.log('✅ Server closed');
-    if (mongoose.connection.readyState === 1) {
-      mongoose.connection.close(false, () => {
-        console.log('✅ MongoDB closed');
-        process.exit(0);
-      });
-    } else {
-      process.exit(0);
-    }
+// Improved ping function with error handling
+function pingServer(url, type = 'Ping') {
+  const pingUrl = `${url}/health`;
+  
+  https.get(pingUrl, (res) => {
+    let data = '';
+    res.on('data', (chunk) => data += chunk);
+    res.on('end', () => {
+      if (res.statusCode === 200) {
+        console.log(`✅ ${type} keep-alive: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
+      } else {
+        console.log(`⚠️ ${type} keep-alive returned: ${res.statusCode}`);
+      }
+    });
+  }).on('error', (err) => {
+    console.log(`❌ ${type} keep-alive failed:`, err.message);
+  }).setTimeout(10000, function() {
+    this.abort();
+    console.log('⚠️ Keep-alive request timed out');
   });
+}
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process in production
 });
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT received. Closing server...');
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  // Give the process time to finish handling requests
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+// Graceful shutdown handlers
+function gracefulShutdown(signal) {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
   server.close(() => {
     console.log('✅ Server closed');
+    
     if (mongoose.connection.readyState === 1) {
       mongoose.connection.close(false, () => {
-        console.log('✅ MongoDB closed');
+        console.log('✅ MongoDB connection closed');
         process.exit(0);
       });
     } else {
       process.exit(0);
     }
   });
-});
+  
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error('⚠️ Forcing shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+module.exports = app; // Export for testing
