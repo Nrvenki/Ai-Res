@@ -9,44 +9,43 @@ dotenv.config();
 
 const app = express();
 
-// ✅ CORS Configuration - Allow all origins
-const corsOptions = {
-  origin: '*', // Allow all origins
+// ✅ CRITICAL: CORS must be the FIRST middleware
+app.use(cors({
+  origin: true, // Allows all origins dynamically
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  credentials: true,
-  optionsSuccessStatus: 200,
-  maxAge: 86400 // 24 hours
-};
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
 
-app.use(cors(corsOptions));
-
-// Additional CORS headers for extra compatibility
+// Emergency CORS fallback
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400');
   
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
   }
   next();
 });
 
-// Body parsers with increased limits
+// Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging middleware
+// Request logging
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
   next();
 });
 
-// MongoDB Connection with better error handling
+// MongoDB Connection - Non-blocking
 if (process.env.MONGODB_URI) {
   mongoose
     .connect(process.env.MONGODB_URI, {
@@ -54,75 +53,64 @@ if (process.env.MONGODB_URI) {
       socketTimeoutMS: 45000,
     })
     .then(() => console.log('✅ MongoDB Connected'))
-    .catch((err) => {
-      console.log('❌ MongoDB Connection Error:', err.message);
-      // Continue without MongoDB for health checks
-    });
-} else {
-  console.log('⚠️ No MONGODB_URI found in environment variables');
+    .catch((err) => console.log('⚠️ MongoDB Error:', err.message));
 }
 
-// Health Check - Must work even if MongoDB is down
+// ✅ HEALTH CHECK - Must respond IMMEDIATELY
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    success: true,
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
 app.get('/', (req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     success: true,
     message: '🚀 AI ATS Resume Checker API is running!',
     version: '1.0.0',
     status: 'active',
     timestamp: new Date().toISOString(),
-    cors: 'enabled for all origins',
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
-app.get('/health', (req, res) => {
-  res.json({ 
-    success: true,
-    status: 'ok',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    memory: process.memoryUsage()
-  });
-});
-
-// Test CORS endpoint
+// Test CORS
 app.get('/test-cors', (req, res) => {
-  res.json({
+  res.status(200).json({
     success: true,
     message: 'CORS is working!',
-    origin: req.headers.origin || 'No origin header',
-    timestamp: new Date().toISOString(),
-    headers: req.headers
+    origin: req.headers.origin || 'No origin',
+    timestamp: new Date().toISOString()
   });
 });
 
-// Routes - Make sure these are defined
-app.use('/api/resume', resumeRoutes);
+// ✅ ROUTES - Make sure resumeRoutes is valid
+try {
+  app.use('/api/resume', resumeRoutes);
+  console.log('✅ Resume routes loaded');
+} catch (err) {
+  console.error('❌ Error loading resume routes:', err.message);
+}
 
-// 404 handler
+// 404 Handler
 app.use((req, res) => {
   res.status(404).json({ 
     success: false,
     message: 'Route not found',
-    path: req.path,
-    method: req.method
+    path: req.path
   });
 });
 
-// Global Error Handling
+// Error Handler
 app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.stack);
-  
-  // Don't expose internal error details in production
-  const errorMessage = process.env.NODE_ENV === 'production' 
-    ? 'Something went wrong on the server' 
-    : err.message;
-  
+  console.error('❌ Error:', err.message);
   res.status(err.status || 500).json({ 
     success: false, 
-    message: errorMessage,
-    error: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    message: err.message || 'Internal server error',
     timestamp: new Date().toISOString()
   });
 });
@@ -130,82 +118,55 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 10000;
 const HOST = '0.0.0.0';
 
-// Start server
+// Start Server
 const server = app.listen(PORT, HOST, () => {
-  console.log('='.repeat(50));
-  console.log(`🚀 Server running on ${HOST}:${PORT}`);
+  console.log('='.repeat(60));
+  console.log(`🚀 Server RUNNING on ${HOST}:${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ Started at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
-  console.log(`🌐 CORS: Enabled for all origins`);
-  console.log('='.repeat(50));
+  console.log(`⏰ Started: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+  console.log(`🌐 CORS: ENABLED for all origins`);
+  console.log('='.repeat(60));
   
-  // Keep-alive for production (Render free tier)
+  // Keep-alive for Render free tier
   if (process.env.NODE_ENV === 'production') {
-    const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://ai-res.onrender.com';
-    
-    console.log('✅ Keep-alive starting for Render free tier...');
-    
-    // Initial ping after 1 minute
-    setTimeout(() => {
-      pingServer(RENDER_URL, 'Initial');
-    }, 60000);
-    
-    // Regular pings every 14 minutes
-    setInterval(() => {
-      pingServer(RENDER_URL, 'Scheduled');
-    }, 14 * 60 * 1000);
-    
-    console.log('✅ Keep-alive enabled (pings every 14 minutes)');
+    startKeepAlive();
   }
 });
 
-// Improved ping function with error handling
-function pingServer(url, type = 'Ping') {
-  const pingUrl = `${url}/health`;
+// Keep-alive function
+function startKeepAlive() {
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://ai-res.onrender.com';
+  console.log('✅ Keep-alive: Starting...');
   
-  https.get(pingUrl, (res) => {
-    let data = '';
-    res.on('data', (chunk) => data += chunk);
-    res.on('end', () => {
-      if (res.statusCode === 200) {
-        console.log(`✅ ${type} keep-alive: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
-      } else {
-        console.log(`⚠️ ${type} keep-alive returned: ${res.statusCode}`);
-      }
+  // Ping every 14 minutes
+  setInterval(() => {
+    const url = `${RENDER_URL}/health`;
+    https.get(url, (res) => {
+      console.log(`✅ Keep-alive: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
+    }).on('error', (err) => {
+      console.log('⚠️ Keep-alive failed:', err.message);
     });
-  }).on('error', (err) => {
-    console.log(`❌ ${type} keep-alive failed:`, err.message);
-  }).setTimeout(10000, function() {
-    this.abort();
-    console.log('⚠️ Keep-alive request timed out');
-  });
+  }, 14 * 60 * 1000);
 }
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  // Don't exit the process in production
+// Error handlers
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason);
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
-  // Give the process time to finish handling requests
-  setTimeout(() => {
-    process.exit(1);
-  }, 1000);
+  setTimeout(() => process.exit(1), 1000);
 });
 
-// Graceful shutdown handlers
-function gracefulShutdown(signal) {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
-  
+// Graceful shutdown
+function shutdown(signal) {
+  console.log(`\n${signal} received. Shutting down...`);
   server.close(() => {
     console.log('✅ Server closed');
-    
     if (mongoose.connection.readyState === 1) {
       mongoose.connection.close(false, () => {
-        console.log('✅ MongoDB connection closed');
+        console.log('✅ MongoDB closed');
         process.exit(0);
       });
     } else {
@@ -213,14 +174,13 @@ function gracefulShutdown(signal) {
     }
   });
   
-  // Force shutdown after 10 seconds
   setTimeout(() => {
-    console.error('⚠️ Forcing shutdown after timeout');
+    console.error('⚠️ Forcing shutdown');
     process.exit(1);
   }, 10000);
 }
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
-module.exports = app; // Export for testing
+module.exports = app;
