@@ -7,6 +7,7 @@ const app = express();
 // ✅ CORS Fix - credentials இருக்கும்போது specific origin வேணும்
 const allowedOrigins = [
   'https://sivaatschecker.netlify.app',
+  'https://sivaatschecker.netlify.app/dashboard',
   'http://localhost:5173',
   'http://localhost:3000'
 ];
