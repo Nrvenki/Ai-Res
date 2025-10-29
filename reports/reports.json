@@ -1,0 +1,195 @@
+[
+  {
+    "_id": "1761725030184",
+    "userId": "guest",
+    "resumeText": "SIVANATH BABU V G MERN Stack Developer | Web App Developer | React Enthusiast Madurai, TN | Ph: +91 9994495686 | sivanathbabuvg@gmail.com| LinkedIn | Portfolio | GitHub EDUCATION KLN COLLEGE OF ENGINEERING Sivaganga, TN Master of Computer Application Sep 2023 - Jun 2025 CGPA: 8.8/10 SOURASHTRA COLLEGE Madurai, TN Bachelor of Computer Science Jun 2020 - Apr 2023 CGPA: 8.1/10 WORK EXPERIENCE MIND VISION TECHNOLOGIES Madurai, TN MERN Stack Developer Intern Jan 2025 – Jun 2025 • Spearheaded the development of 5 internal web applications, personally resolving 90% of bugs reported during user testing, and leading to seamless deployment and positive feedback. • Refactored 15+ legacy modules by replacing jQuery monoliths with reusable React components and RESTful Node.js APIs, boosting scalability and cutting code duplication by 40%. • Integrated 5+ RESTful and APIs to link MongoDB with the frontend, streamlining real-time data flow and cutting response times by 25%. UNIVERSITY PROJECTS DIABET",
+    "jobDescription": "Create and maintain reliable APIs and backend systems for our web apps.\r\nWork with cross-functional teams to plan, put new features into action, and test them.\r\nWork on both individual and group projects, producing top-notch code by the deadline.\r\nParticipate in code reviews and offer helpful criticism to colleagues.\r\nEnsure the performance, security, and scalability of backend applications.\r\nProjects should be deployed on servers, and configurations should be managed.\r\nDebug and fix problems th",
+    "atsScore": 60,
+    "breakdown": {
+      "keywordMatch": 17,
+      "formatting": 80,
+      "readability": 100,
+      "structure": 100,
+      "keywordBalance": 70
+    },
+    "suggestions": [
+      {
+        "category": "Keywords",
+        "message": "Add these important keywords from job description: security, python, mvc, php, postgresql",
+        "priority": "high"
+      },
+      {
+        "category": "Structure",
+        "message": "Add a Professional Summary at the top highlighting your key qualifications",
+        "priority": "medium"
+      },
+      {
+        "category": "Skills",
+        "message": "Job requires Python - add this skill if you have experience with it",
+        "priority": "high"
+      }
+    ],
+    "strengths": [
+      "Well-structured resume with all essential sections",
+      "Clear and professional writing style with strong action verbs",
+      "ATS-friendly format without complex tables or special characters",
+      "Optimal keyword density and resume length"
+    ],
+    "weaknesses": [
+      "Low keyword match - add more relevant skills and terms from job description"
+    ],
+    "createdAt": "2025-10-29T08:03:50.184Z"
+  },
+  {
+    "_id": "1761724387296",
+    "userId": "guest",
+    "resumeText": "SIVANATH BABU V G MERN Stack Developer | Web App Developer | React Enthusiast Madurai, TN | Ph: +91 9994495686 | sivanathbabuvg@gmail.com| LinkedIn | Portfolio | GitHub EDUCATION KLN COLLEGE OF ENGINEERING Sivaganga, TN Master of Computer Application Sep 2023 - Jun 2025 CGPA: 8.8/10 SOURASHTRA COLLEGE Madurai, TN Bachelor of Computer Science Jun 2020 - Apr 2023 CGPA: 8.1/10 WORK EXPERIENCE MIND VISION TECHNOLOGIES Madurai, TN MERN Stack Developer Intern Jan 2025 – Jun 2025 • Spearheaded the development of 5 internal web applications, personally resolving 90% of bugs reported during user testing, and leading to seamless deployment and positive feedback. • Refactored 15+ legacy modules by replacing jQuery monoliths with reusable React components and RESTful Node.js APIs, boosting scalability and cutting code duplication by 40%. • Integrated 5+ RESTful and APIs to link MongoDB with the frontend, streamlining real-time data flow and cutting response times by 25%. UNIVERSITY PROJECTS DIABET",
+    "jobDescription": "Create and maintain reliable APIs and backend systems for our web apps.\r\nWork with cross-functional teams to plan, put new features into action, and test them.\r\nWork on both individual and group projects, producing top-notch code by the deadline.\r\nParticipate in code reviews and offer helpful criticism to colleagues.\r\nEnsure the performance, security, and scalability of backend applications.\r\nProjects should be deployed on servers, and configurations should be managed.\r\nDebug and fix problems th",
+    "atsScore": 60,
+    "breakdown": {
+      "keywordMatch": 17,
+      "formatting": 80,
+      "readability": 100,
+      "structure": 100,
+      "keywordBalance": 70
+    },
+    "suggestions": [
+      {
+        "category": "Keywords",
+        "message": "Add these important keywords from job description: security, python, mvc, php, postgresql",
+        "priority": "high"
+      },
+      {
+        "category": "Structure",
+        "message": "Add a Professional Summary at the top highlighting your key qualifications",
+        "priority": "medium"
+      },
+      {
+        "category": "Skills",
+        "message": "Job requires Python - add this skill if you have experience with it",
+        "priority": "high"
+      }
+    ],
+    "strengths": [
+      "Well-structured resume with all essential sections",
+      "Clear and professional writing style with strong action verbs",
+      "ATS-friendly format without complex tables or special characters",
+      "Optimal keyword density and resume length"
+    ],
+    "weaknesses": [
+      "Low keyword match - add more relevant skills and terms from job description"
+    ],
+    "createdAt": "2025-10-29T07:53:07.296Z"
+  },
+  {
+    "_id": "1761724347706",
+    "userId": "guest",
+    "resumeText": "SIVANATH BABU V G MERN Stack Developer | Web App Developer | React Enthusiast Madurai, TN | Ph: +91 9994495686 | sivanathbabuvg@gmail.com| LinkedIn | Portfolio | GitHub EDUCATION KLN COLLEGE OF ENGINEERING Sivaganga, TN Master of Computer Application Sep 2023 - Jun 2025 CGPA: 8.8/10 SOURASHTRA COLLEGE Madurai, TN Bachelor of Computer Science Jun 2020 - Apr 2023 CGPA: 8.1/10 WORK EXPERIENCE MIND VISION TECHNOLOGIES Madurai, TN MERN Stack Developer Intern Jan 2025 – Jun 2025 • Spearheaded the development of 5 internal web applications, personally resolving 90% of bugs reported during user testing, and leading to seamless deployment and positive feedback. • Refactored 15+ legacy modules by replacing jQuery monoliths with reusable React components and RESTful Node.js APIs, boosting scalability and cutting code duplication by 40%. • Integrated 5+ RESTful and APIs to link MongoDB with the frontend, streamlining real-time data flow and cutting response times by 25%. UNIVERSITY PROJECTS DIABET",
+    "jobDescription": "Developing front end website architecture.\r\nDesigning user interactions on web pages.\r\nDeveloping back-end website applications.\r\nEnsuring responsiveness of applications.\r\nWorking alongside graphic designers for web design features.\r\nSeeing through a project from conception to finished product.\r\nDesigning and developing APIs.\r\nMeeting both technical and consumer needs.\r\n",
+    "atsScore": 54,
+    "breakdown": {
+      "keywordMatch": 8,
+      "formatting": 80,
+      "readability": 100,
+      "structure": 100,
+      "keywordBalance": 50
+    },
+    "suggestions": [
+      {
+        "category": "Keywords",
+        "message": "Add these important keywords from job description: front end website architecture, designing user interactions, web pages, back-end website applications, responsiveness of applications",
+        "priority": "high"
+      },
+      {
+        "category": "Structure",
+        "message": "Add a Professional Summary at the top highlighting your key qualifications",
+        "priority": "medium"
+      }
+    ],
+    "strengths": [
+      "Well-structured resume with all essential sections",
+      "Clear and professional writing style with strong action verbs",
+      "ATS-friendly format without complex tables or special characters"
+    ],
+    "weaknesses": [
+      "Low keyword match - add more relevant skills and terms from job description"
+    ],
+    "createdAt": "2025-10-29T07:52:27.706Z"
+  },
+  {
+    "_id": "1761724127685",
+    "userId": "guest",
+    "resumeText": "EMPLOYEE EXPERIENCE LETTER We hereby certify that Vignesh R has worked in our company from 20th November 2023 to 30th October 2024 and has gained experience as Medical Coder in the department of Medical Coding We wish him a good life and better opportunities moving forward. For Pro1 Health Systems Pvt Ltd. Suresh Krishnan. CTO & Director Pro1 Health Systems Private Limited Tek Meadows, Tower B, Ground Floor 51, Rajiv Gandhi Salai, Sholinganallur OMR Chennai 600119, Tamilnadu, India 91-44-42668528 pro1.health",
+    "jobDescription": "Developing front end website architecture.\r\nDesigning user interactions on web pages.\r\nDeveloping back-end website applications.\r\nEnsuring responsiveness of applications.\r\nWorking alongside graphic designers for web design features.\r\nSeeing through a project from conception to finished product.\r\nDesigning and developing APIs.\r\nMeeting both technical and consumer needs.",
+    "atsScore": 36,
+    "breakdown": {
+      "keywordMatch": 0,
+      "formatting": 20,
+      "readability": 100,
+      "structure": 100,
+      "keywordBalance": 20
+    },
+    "suggestions": [
+      {
+        "category": "Keywords",
+        "message": "Add these important keywords from job description: front end website architecture, designing user interactions, web pages, back-end website applications, responsiveness of applications",
+        "priority": "high"
+      },
+      {
+        "category": "Structure",
+        "message": "Include a dedicated \"Skills\" section with relevant technical skills",
+        "priority": "high"
+      },
+      {
+        "category": "Structure",
+        "message": "Add an \"Education\" section with your academic qualifications",
+        "priority": "medium"
+      },
+      {
+        "category": "Content",
+        "message": "Start bullet points with strong action verbs (e.g., \"Developed\", \"Led\", \"Implemented\", \"Optimized\")",
+        "priority": "medium"
+      },
+      {
+        "category": "Content",
+        "message": "Add quantifiable achievements (e.g., \"Increased sales by 25%\", \"Reduced load time by 40%\")",
+        "priority": "high"
+      },
+      {
+        "category": "Content",
+        "message": "Resume is too short - aim for 400-700 words to showcase your experience",
+        "priority": "medium"
+      },
+      {
+        "category": "Structure",
+        "message": "Add a Professional Summary at the top highlighting your key qualifications",
+        "priority": "medium"
+      },
+      {
+        "category": "Contact",
+        "message": "Ensure your email address is clearly visible at the top",
+        "priority": "high"
+      },
+      {
+        "category": "Contact",
+        "message": "Include a phone number in your contact information",
+        "priority": "medium"
+      },
+      {
+        "category": "Keywords",
+        "message": "Maintain 1-3% keyword density - naturally incorporate job-related terms throughout",
+        "priority": "medium"
+      }
+    ],
+    "strengths": [
+      "Clear and professional writing style with strong action verbs",
+      "ATS-friendly format without complex tables or special characters"
+    ],
+    "weaknesses": [
+      "Low keyword match - add more relevant skills and terms from job description",
+      "Missing key sections like Summary, Experience, or Skills",
+      "Adjust keyword usage - either too sparse or stuffed"
+    ],
+    "createdAt": "2025-10-29T07:48:47.685Z"
+  }
+]
