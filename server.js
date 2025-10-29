@@ -2,52 +2,32 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
+const https = require('https');
 const resumeRoutes = require('./routes/resume');
 
 dotenv.config();
 
 const app = express();
 
-// ✅ CORS - முக்கியம்! இதை முதல்ல add பண்ணணும்
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://sivaatschecker.netlify.app',
-  'https://*.netlify.app' // எல்லா Netlify apps-உம்
-];
-
+// CORS Configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.netlify.app')) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Development-க்காக எல்லாரையும் allow பண்ணுங்க
-    }
-  },
-  credentials: true,
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://sivaatschecker.netlify.app',
+    'https://*.netlify.app'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 }));
-
-// Preflight requests-க்காக
-app.options('*', cors());
 
 // Additional CORS headers
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin) || origin?.endsWith('.netlify.app')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -74,8 +54,7 @@ app.get('/', (req, res) => {
     message: '🚀 AI ATS Resume Checker API is running!',
     version: '1.0.0',
     status: 'active',
-    timestamp: new Date().toISOString(),
-    cors: 'enabled'
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -87,37 +66,70 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Test CORS endpoint
-app.get('/api/test-cors', (req, res) => {
-  res.json({
-    success: true,
-    message: 'CORS is working!',
-    origin: req.headers.origin
-  });
-});
-
 // Error Handling
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ 
     success: false, 
     message: 'Something went wrong!', 
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    error: err.message 
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
+const HOST = '0.0.0.0';
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// Start server
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on ${HOST}:${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ CORS enabled for: ${allowedOrigins.join(', ')}`);
+  console.log(`⏰ Started at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+  
+  // Keep-alive function (inline) - Render free tier sleep-ஐ prevent பண்ண
+  if (process.env.NODE_ENV === 'production') {
+    const keepAlive = () => {
+      const url = process.env.RENDER_EXTERNAL_URL || 'https://ai-res.onrender.com';
+      
+      setInterval(() => {
+        https.get(url, (res) => {
+          if (res.statusCode === 200) {
+            console.log('✅ Keep-alive ping successful');
+          }
+        }).on('error', (err) => {
+          console.log('⚠️ Keep-alive ping failed:', err.message);
+        });
+      }, 14 * 60 * 1000); // Every 14 minutes
+    };
+    
+    keepAlive();
+    console.log('✅ Keep-alive started (pings every 14 minutes)');
+  }
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+  console.log('SIGTERM received. Closing server gracefully...');
   server.close(() => {
-    console.log('HTTP server closed');
+    console.log('✅ Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('✅ MongoDB connection closed');
+      process.exit(0);
+    });
   });
+});
+
+process.on('SIGINT', () => {
+  console.log('\nSIGINT received. Closing server gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('✅ MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+// Unhandled promise rejection
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Promise Rejection:', err);
 });
