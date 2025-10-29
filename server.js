@@ -9,16 +9,17 @@ dotenv.config();
 
 const app = express();
 
-// ✅ CORS - எல்லாரையும் allow (simplest & works)
+// ✅ CORS - Simple and works
 app.use(cors());
-app.options('*', cors());
 
-// Additional headers for safety
+// Additional CORS headers
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -63,7 +64,7 @@ app.get('/test-cors', (req, res) => {
   res.json({
     success: true,
     message: 'CORS is working!',
-    origin: req.headers.origin,
+    origin: req.headers.origin || 'No origin header',
     timestamp: new Date().toISOString()
   });
 });
@@ -87,7 +88,7 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
   
-  // Keep-alive - Backend-ஐ awake-ஆ வைக்க
+  // Keep-alive for production
   if (process.env.NODE_ENV === 'production') {
     const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://ai-res.onrender.com';
     
